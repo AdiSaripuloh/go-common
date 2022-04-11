@@ -39,7 +39,7 @@ func Init(stackTraceEnabled bool) {
 		encoder = zapcore.NewJSONEncoder(config)
 		level   = zapcore.InfoLevel
 		core    = zapcore.NewCore(encoder, os.Stdout, level)
-		opts    = []zap.Option{zap.AddCaller()}
+		opts    = []zap.Option{zap.AddCaller(), zap.AddCallerSkip(1)}
 	)
 
 	if stackTraceEnabled {
@@ -67,40 +67,52 @@ func getCorrelationIDFromContext(ctx context.Context) (id string) {
 
 func transformFields(ctx context.Context, fields []Field) []zap.Field {
 	var (
-		zapFields = make([]zap.Field, 0, 2)
-		zapMeta   = [2]Field{
-			{Key: CtxUserAgentKey, Value: getUserAgentFromContext(ctx)},
-			{Key: CtxCorrelationIDKey, Value: getCorrelationIDFromContext(ctx)},
-		}
-		zapData = make([]Field, 0, len(fields))
+		zapFields     = make([]zap.Field, 0, 2)
+		zapMeta       = make([]Field, 0, 2)
+		userAgent     = getUserAgentFromContext(ctx)
+		correlationID = getCorrelationIDFromContext(ctx)
+		zapData       = make([]Field, 0, len(fields))
 	)
 
-	zapFields = append(zapFields, zap.Any("meta", zapMeta))
+	if userAgent != "" {
+		zapMeta = append(zapMeta, Field{CtxUserAgentKey, userAgent})
+	}
+
+	if correlationID != "" {
+		zapMeta = append(zapMeta, Field{CtxCorrelationIDKey, correlationID})
+	}
+
+	if len(zapMeta) > 0 {
+		zapFields = append(zapFields, zap.Any("meta", zapMeta))
+	}
 
 	for _, f := range fields {
 		zapData = append(zapData, f)
 	}
-	zapFields = append(zapFields, zap.Any("data", zapData))
+
+	if len(zapData) > 0 {
+		zapFields = append(zapFields, zap.Any("data", zapData))
+	}
 
 	return zapFields
 }
 
-func Error(ctx context.Context, msg string, fields []Field) {
+func Error(ctx context.Context, msg string, fields ...Field) {
 	defer logger.Sync()
 	logger.Error(msg, transformFields(ctx, fields)...)
 }
 
-func Warn(ctx context.Context, msg string, fields []Field) {
+func Warn(ctx context.Context, msg string, fields ...Field) {
 	defer logger.Sync()
 	logger.Warn(msg, transformFields(ctx, fields)...)
 }
 
-func Info(ctx context.Context, msg string, fields []Field) {
+func Info(ctx context.Context, msg string, fields ...Field) {
 	defer logger.Sync()
 	logger.Info(msg, transformFields(ctx, fields)...)
 }
 
-func Debug(ctx context.Context, msg string, fields []Field) {
+func Debug(ctx context.Context, msg string, fields ...Field) {
 	defer logger.Sync()
 	logger.Info(msg, transformFields(ctx, fields)...)
 }
