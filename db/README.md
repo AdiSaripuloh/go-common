@@ -79,3 +79,35 @@ func main() {
 	)
 }
 ```
+# Log
+`ExecTx`
+```json
+{
+  "level": "INFO",
+  "ts": "2022-04-13T05:35:25.405+0700",
+  "caller": "go-common/main.go:56",
+  "msg": "ExecTx",
+  "data": {
+    "datnameTx": "go",
+    "destTx": {
+      "Pid": 5817,
+      "Datname": "go"
+    }
+  }
+}
+```
+`Exec`
+```json
+{
+  "level": "INFO",
+  "ts": "2022-04-13T05:35:25.406+0700",
+  "caller": "go-common/main.go:71",
+  "msg": "Exec",
+  "data": {
+    "dest": {
+      "Pid": 5817,
+      "Datname": "go"
+    }
+  }
+}
+```
