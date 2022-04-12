@@ -66,7 +66,8 @@ func main() {
 
 	var (
 		dest      Destination
-		statement = db.NewStatement(&dest, "SELECT pid, datname FROM pg_stat_activity WHERE datname IS NOT NULL")
+		// using statement.Debug() log query
+		statement = db.NewStatement(&dest, "SELECT pid, datname FROM pg_stat_activity WHERE datname IS NOT NULL").Debug()
 	)
 	// execute multiple queries or single query without transaction.
 	err = conn.Exec(ctx, statement)
