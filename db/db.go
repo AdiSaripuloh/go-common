@@ -19,10 +19,10 @@ type (
 		User     string `yaml:"user"`
 		Password string `yaml:"password"`
 
-		MaxOpenConnections     int `yaml:"MaxOpenConnections"`
-		MaxLifeTimeConnections int `yaml:"MaxLifeTimeConnections"` // Seconds
-		MaxIdleConnections     int `yaml:"MaxIdleConnections"`
-		MaxIdleTime            int `yaml:"MaxIdleTime"` // Seconds
+		MaxOpenConnections    int `yaml:"maxOpenConnections"`
+		MaxLifeTimeConnection int `yaml:"maxLifeTimeConnection"` // Seconds
+		MaxIdleConnections    int `yaml:"maxIdleConnections"`
+		MaxIdleTimeConnection int `yaml:"maxIdleTimeConnection"` // Seconds
 	}
 	DB struct {
 		Conn *sqlx.DB
@@ -40,10 +40,10 @@ func NewDB(config Config) (*DB, error) {
 		return nil, err
 	}
 
-	conn.SetConnMaxLifetime(time.Duration(config.MaxLifeTimeConnections) * time.Second)
+	conn.SetConnMaxLifetime(time.Duration(config.MaxLifeTimeConnection) * time.Second)
 	conn.SetMaxOpenConns(config.MaxOpenConnections)
 	conn.SetMaxIdleConns(config.MaxIdleConnections)
-	conn.SetConnMaxIdleTime(time.Duration(config.MaxLifeTimeConnections) * time.Second)
+	conn.SetConnMaxIdleTime(time.Duration(config.MaxIdleTimeConnection) * time.Second)
 
 	return &DB{Conn: conn}, nil
 }
