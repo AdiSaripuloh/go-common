@@ -2,6 +2,7 @@ package logger
 
 import (
 	"context"
+	"log"
 	"os"
 
 	"go.uber.org/zap"
@@ -66,6 +67,10 @@ func getCorrelationIDFromContext(ctx context.Context) (id string) {
 }
 
 func transformFields(ctx context.Context, fields []Field) []zap.Field {
+	if logger == nil {
+		log.Panic("error: logger uninitialized, exec logger.Init() first.")
+	}
+
 	var (
 		zapFields     = make([]zap.Field, 0, 2)
 		zapMeta       = make(map[string]any, 2)
