@@ -103,21 +103,23 @@ func transformFields(ctx context.Context, fields []Field) []zap.Field {
 }
 
 func Error(ctx context.Context, msg string, fields ...Field) {
-	defer logger.Sync()
 	logger.Error(msg, transformFields(ctx, fields)...)
 }
 
 func Warn(ctx context.Context, msg string, fields ...Field) {
-	defer logger.Sync()
 	logger.Warn(msg, transformFields(ctx, fields)...)
 }
 
 func Info(ctx context.Context, msg string, fields ...Field) {
-	defer logger.Sync()
 	logger.Info(msg, transformFields(ctx, fields)...)
 }
 
 func Debug(ctx context.Context, msg string, fields ...Field) {
-	defer logger.Sync()
 	logger.Info(msg, transformFields(ctx, fields)...)
+}
+
+// Sync calls the underlying Core's Sync method, flushing any buffered log
+// entries. Applications should take care to call Sync before exiting.
+func Sync() error {
+	return logger.Sync()
 }

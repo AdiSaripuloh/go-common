@@ -9,11 +9,13 @@ package main
 import (
 	"context"
 	
-    "github.com/AdiSaripuloh/go-common/logger"
+	"github.com/AdiSaripuloh/go-common/logger"
 )
 
 func main() {
 	logger.Init(false)
+	defer logger.Sync()
+	
 	logger.Info(context.Background(), "logger without stacktrace")
 	logger.Info(context.Background(), "logger with data", logger.Field{Key: "Key", Value: "Value"})
 }
