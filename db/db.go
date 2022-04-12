@@ -6,12 +6,12 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/AdiSaripuloh/go-common/logger"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
-// TODO: Add logger for query.
-// TODO: Isolation level configurable.
 type (
 	Config struct {
 		Driver   string `yaml:"driver"`
@@ -29,9 +29,10 @@ type (
 	// A Statement is a simple wrapper for creating a statement consisting of
 	// a query and a set of arguments to be passed to that query.
 	Statement struct {
-		dest  any // if query doesn't have any result, leave it nil.
-		query string
-		args  []any
+		dest        any // if query doesn't have any result, leave it nil.
+		query       string
+		args        []any
+		enableDebug bool
 	}
 	DB struct {
 		conn *sqlx.DB
@@ -40,7 +41,7 @@ type (
 
 // NewStatement creating new pipeline statement.
 func NewStatement(dest any, query string, args ...any) *Statement {
-	return &Statement{dest, query, args}
+	return &Statement{dest, query, args, false}
 }
 
 func (s *Statement) SetDestination(dest any) *Statement {
@@ -70,6 +71,19 @@ func (s *Statement) GetArgs() []any {
 	return s.args
 }
 
+func (s *Statement) log(ctx context.Context) {
+	logger.Debug(ctx, "statement debug",
+		logger.Field{Key: "query", Value: s.GetQuery()},
+		logger.Field{Key: "args", Value: s.GetArgs()},
+		logger.Field{Key: "dest", Value: s.GetDestination()},
+	)
+}
+
+func (s *Statement) Debug() *Statement {
+	s.enableDebug = true
+	return s
+}
+
 // exec Execute the statement within supplied transaction and update the
 // destination if not nil.
 func (s *Statement) exec(ctx context.Context, stmt *sqlx.Stmt) error {
@@ -95,6 +109,10 @@ func (s *Statement) exec(ctx context.Context, stmt *sqlx.Stmt) error {
 			return err
 		}
 		break
+	}
+
+	if s.enableDebug {
+		s.log(ctx)
 	}
 
 	return err
@@ -188,6 +206,7 @@ func (db *DB) Exec(ctx context.Context, statements ...*Statement) error {
 }
 
 // ExecTx execute multiple queries or single query in single transaction.
+// TODO: Isolation level configurable per transaction.
 func (db *DB) ExecTx(ctx context.Context, statements ...*Statement) error {
 	tx, err := db.conn.BeginTxx(ctx, nil)
 	if err != nil {
