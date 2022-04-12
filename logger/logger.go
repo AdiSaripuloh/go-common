@@ -68,18 +68,18 @@ func getCorrelationIDFromContext(ctx context.Context) (id string) {
 func transformFields(ctx context.Context, fields []Field) []zap.Field {
 	var (
 		zapFields     = make([]zap.Field, 0, 2)
-		zapMeta       = make([]Field, 0, 2)
+		zapMeta       = make(map[string]any, 2)
 		userAgent     = getUserAgentFromContext(ctx)
 		correlationID = getCorrelationIDFromContext(ctx)
-		zapData       = make([]Field, 0, len(fields))
+		zapData       = make(map[string]any, len(fields))
 	)
 
 	if userAgent != "" {
-		zapMeta = append(zapMeta, Field{CtxUserAgentKey, userAgent})
+		zapMeta[CtxUserAgentKey] = userAgent
 	}
 
 	if correlationID != "" {
-		zapMeta = append(zapMeta, Field{CtxCorrelationIDKey, correlationID})
+		zapMeta[CtxCorrelationIDKey] = correlationID
 	}
 
 	if len(zapMeta) > 0 {
@@ -87,7 +87,7 @@ func transformFields(ctx context.Context, fields []Field) []zap.Field {
 	}
 
 	for _, f := range fields {
-		zapData = append(zapData, f)
+		zapData[f.Key] = f.Value
 	}
 
 	if len(zapData) > 0 {
