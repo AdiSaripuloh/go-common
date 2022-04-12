@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"sync"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -19,7 +20,10 @@ type Field struct {
 	Value any    `json:"value"`
 }
 
-var logger *zap.Logger
+var (
+	logger *zap.Logger
+	once   sync.Once
+)
 
 func Init(stackTraceEnabled bool) {
 	var (
@@ -47,7 +51,9 @@ func Init(stackTraceEnabled bool) {
 		opts = append(opts, zap.AddStacktrace(zap.ErrorLevel))
 	}
 
-	logger = zap.New(core, opts...)
+	once.Do(func() {
+		logger = zap.New(core, opts...)
+	})
 }
 
 func getUserAgentFromContext(ctx context.Context) (userAgent string) {
