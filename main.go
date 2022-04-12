@@ -1,9 +1,3 @@
-# Package `db`
-
-Database query wrapper.
-
-# Usage
-```go
 package main
 
 import (
@@ -78,4 +72,3 @@ func main() {
 		logger.Field{Key: "dest", Value: dest},
 	)
 }
-```
