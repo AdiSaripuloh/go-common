@@ -10,21 +10,26 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Config struct {
-	Driver   string `yaml:"driver"`
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	DBName   string `yaml:"dbName"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
+type (
+	Config struct {
+		Driver   string `yaml:"driver"`
+		Host     string `yaml:"host"`
+		Port     int    `yaml:"port"`
+		DBName   string `yaml:"dbName"`
+		User     string `yaml:"user"`
+		Password string `yaml:"password"`
 
-	MaxOpenConnections     int `yaml:"MaxOpenConnections"`
-	MaxLifeTimeConnections int `yaml:"MaxLifeTimeConnections"` // Seconds
-	MaxIdleConnections     int `yaml:"MaxIdleConnections"`
-	MaxIdleTime            int `yaml:"MaxIdleTime"` // Seconds
-}
+		MaxOpenConnections     int `yaml:"MaxOpenConnections"`
+		MaxLifeTimeConnections int `yaml:"MaxLifeTimeConnections"` // Seconds
+		MaxIdleConnections     int `yaml:"MaxIdleConnections"`
+		MaxIdleTime            int `yaml:"MaxIdleTime"` // Seconds
+	}
+	DB struct {
+		Conn *sqlx.DB
+	}
+)
 
-func NewDB(config Config) (*sqlx.DB, error) {
+func NewDB(config Config) (*DB, error) {
 	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		config.Host, config.Port, config.User, config.Password, config.DBName,
@@ -40,15 +45,15 @@ func NewDB(config Config) (*sqlx.DB, error) {
 	conn.SetMaxIdleConns(config.MaxIdleConnections)
 	conn.SetConnMaxIdleTime(time.Duration(config.MaxLifeTimeConnections) * time.Second)
 
-	return conn, nil
+	return &DB{Conn: conn}, nil
 }
 
 // A Statement is a simple wrapper for creating a statement consisting of
 // a query and a set of arguments to be passed to that query.
 type Statement struct {
-	dest  any // if query doesn't have any result, leave it nil.
-	query string
-	args  []any
+	Dest  any // if query doesn't have any result, leave it nil.
+	Query string
+	Args  []any
 }
 
 // NewStatement creating new pipeline statement.
@@ -59,27 +64,27 @@ func NewStatement(dest any, query string, args ...any) *Statement {
 // Exec Execute the statement within supplied transaction and store to destination if not nil.
 // TODO: Add logger for query.
 func (ps *Statement) Exec(ctx context.Context, tx *sqlx.Tx) error {
-	stmt, err := tx.PreparexContext(ctx, ps.query)
+	stmt, err := tx.PreparexContext(ctx, ps.Query)
 	if err != nil {
 		return err
 	}
 
 	// destination nil it's mean query doesn't need result
-	if ps.dest == nil {
-		_, err = stmt.ExecContext(ctx, ps.args...)
+	if ps.Dest == nil {
+		_, err = stmt.ExecContext(ctx, ps.Args...)
 		return err
 	}
 
-	rt := reflect.TypeOf(ps.dest)
+	rt := reflect.TypeOf(ps.Dest)
 	switch rt.Elem().Kind() {
 	case reflect.Slice, reflect.Array:
-		err = stmt.SelectContext(ctx, ps.dest, ps.args...)
+		err = stmt.SelectContext(ctx, ps.Dest, ps.Args...)
 		if err != nil {
 			return err
 		}
 		break
 	default:
-		err = stmt.GetContext(ctx, ps.dest, ps.args...)
+		err = stmt.GetContext(ctx, ps.Dest, ps.Args...)
 		if err != nil {
 			return err
 		}
@@ -91,7 +96,7 @@ func (ps *Statement) Exec(ctx context.Context, tx *sqlx.Tx) error {
 
 // flushDest free memory of the destination
 func (ps *Statement) flushDest() {
-	ps.dest = nil
+	ps.Dest = nil
 }
 
 // RunPipeline run multiple statements in single pipeline.
@@ -111,8 +116,8 @@ func RunPipeline(ctx context.Context, tx *sqlx.Tx, pipelineStmts ...*Statement) 
 }
 
 // WithTx run multiple query in single transaction.
-func WithTx(ctx context.Context, db *sqlx.DB, statements ...*Statement) error {
-	tx, err := db.BeginTxx(ctx, nil)
+func (db *DB) WithTx(ctx context.Context, statements ...*Statement) error {
+	tx, err := db.Conn.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -129,4 +134,9 @@ func WithTx(ctx context.Context, db *sqlx.DB, statements ...*Statement) error {
 	}
 
 	return nil
+}
+
+// Close connection
+func (db *DB) Close(ctx context.Context) error {
+	return db.Conn.Close()
 }

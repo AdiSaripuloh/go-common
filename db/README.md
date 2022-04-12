@@ -25,12 +25,12 @@ func main() {
 		MaxIdleConnections:     20,
 		MaxIdleTime:            30,
 	}
-	sqlDB, err := db.NewDB(config)
+	connDB, err := db.NewDB(config)
 	if err != nil {
 		logger.Error(ctx, "Open Connection", logger.Field{Key: "error", Value: err.Error()})
 		return
 	}
-	defer sqlDB.Close()
+	defer connDB.Close(ctx)
 
 	type X struct {
 		Pid     int64  `db:"pid"`
@@ -43,7 +43,7 @@ func main() {
 		db.NewStatement(&datname, "SELECT datname FROM pg_stat_activity WHERE pid = $1", &dest.Pid),
 		db.NewStatement(&dest, "SELECT pid, datname FROM pg_stat_activity WHERE pid = $1", &dest.Pid),
 	}
-	err1 := db.WithTx(ctx, sqlDB, stmts...)
+	err1 := connDB.WithTx(ctx, stmts...)
 	if err1 != nil {
 		logger.Error(ctx, "WithTx", logger.Field{Key: "error", Value: err1.Error()})
 		return
