@@ -54,8 +54,10 @@ func NewStatement(dest any, query string, args ...any) *Statement {
 
 func (s *Statement) SetDestination(dest any) *Statement {
 	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.dest = dest
-	s.mu.Unlock()
+
 	return s
 }
 
@@ -65,8 +67,10 @@ func (s *Statement) GetDestination() any {
 
 func (s *Statement) SetQuery(query string) *Statement {
 	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.query = query
-	s.mu.Unlock()
+
 	return s
 }
 
@@ -76,8 +80,10 @@ func (s *Statement) GetQuery() string {
 
 func (s *Statement) SetArgs(args []any) *Statement {
 	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.args = args
-	s.mu.Unlock()
+
 	return s
 }
 
@@ -95,8 +101,10 @@ func (s *Statement) log(ctx context.Context) {
 
 func (s *Statement) Debug() *Statement {
 	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.enableDebug = true
-	s.mu.Unlock()
+
 	return s
 }
 

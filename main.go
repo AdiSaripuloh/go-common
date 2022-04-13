@@ -81,7 +81,7 @@ func main() {
 		Port:     6379,
 		Database: 1,
 	}
-	redis, errR := cache.NewRedis(cfg)
+	redis, errR := cache.NewRedis(&cfg)
 	if errR != nil {
 		logger.Error(ctx, "redis", logger.Field{Key: "error", Value: errR.Error()})
 		return

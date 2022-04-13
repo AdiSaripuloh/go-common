@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -15,9 +16,10 @@ var ErrKeyNotFound = errors.New("key not found")
 
 type Redis struct {
 	client *redis.Client
+	mu     *sync.Mutex
 }
 
-func NewRedis(config Config) (*Redis, error) {
+func NewRedis(config *Config) (*Redis, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", config.Host, config.Port),
 		Password: config.Password,
@@ -28,11 +30,14 @@ func NewRedis(config Config) (*Redis, error) {
 		return nil, err
 	}
 
-	return &Redis{client: client}, nil
+	return &Redis{client: client, mu: &sync.Mutex{}}, nil
 }
 
 // Set store with TTL
 func (r *Redis) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	var str, err = json.Marshal(value)
 	if err != nil {
 		return err
@@ -45,6 +50,9 @@ func (r *Redis) Set(ctx context.Context, key string, value any, ttl time.Duratio
 
 // Get by key
 func (r *Redis) Get(ctx context.Context, key string, dest any) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	var value = strings.TrimSpace(r.client.Get(key).Val())
 	if len(value) == 0 {
 		return ErrKeyNotFound
@@ -60,6 +68,9 @@ func (r *Redis) Get(ctx context.Context, key string, dest any) error {
 
 // Del by key
 func (r *Redis) Del(ctx context.Context, key []string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	r.client.Del(key...)
 
 	return nil
@@ -67,5 +78,8 @@ func (r *Redis) Del(ctx context.Context, key []string) error {
 
 // Close client
 func (r *Redis) Close(ctx context.Context, key []string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	return r.client.Close()
 }
