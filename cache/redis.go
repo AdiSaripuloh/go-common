@@ -21,7 +21,7 @@ var ErrKeyNotFound = errors.New("key not found")
 
 func NewRedis(config *Config) (*Redis, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", config.Host, config.Port),
+		Addr:     fmt.Sprintf("%s://%s:%d", config.Scheme, config.Host, config.Port),
 		Password: config.Password,
 		DB:       config.Database,
 	})

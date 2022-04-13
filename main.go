@@ -37,12 +37,12 @@ func main() {
 	defer logger.Sync()
 
 	// db
-	conn, err := db.NewDB(&cfg.Database)
+	sqlxDB, err := db.NewDB(&cfg.Database)
 	if err != nil {
 		logger.Error(ctx, "open connection", logger.Field{Key: "error", Value: err.Error()})
 		return
 	}
-	defer conn.Close(ctx)
+	defer sqlxDB.Close()
 	type Destination struct {
 		Pid     int64  `db:"pid"`
 		Datname string `db:"datname"`
@@ -56,7 +56,7 @@ func main() {
 		}
 	)
 	// execute multiple queries or single query in single transaction.
-	errTx := conn.ExecTx(ctx, statements...)
+	errTx := db.ExecTx(ctx, sqlxDB, statements...)
 	if errTx != nil {
 		logger.Error(ctx, "ExecTx", logger.Field{Key: "error", Value: errTx.Error()})
 		return
@@ -70,7 +70,7 @@ func main() {
 		statement = db.NewStatement(&dest, "SELECT pid, datname FROM pg_stat_activity WHERE datname IS NOT NULL")
 	)
 	// execute multiple queries or single query without transaction.
-	err = conn.Exec(ctx, statement)
+	err = db.Exec(ctx, sqlxDB, statement)
 	if err != nil {
 		logger.Error(ctx, "Exec", logger.Field{Key: "error", Value: err.Error()})
 		return
