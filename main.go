@@ -5,34 +5,39 @@ import (
 	"time"
 
 	"github.com/AdiSaripuloh/go-common/cache"
+	"github.com/AdiSaripuloh/go-common/config"
 	"github.com/AdiSaripuloh/go-common/db"
 	"github.com/AdiSaripuloh/go-common/logger"
+	// import this when using driver "postgres"
 	_ "github.com/lib/pq"
+	// import this when using config.BindFromConsul
+	_ "github.com/spf13/viper/remote"
 )
 
 func main() {
+	ctx := context.Background()
+
+	// config
+	type Config struct {
+		Logger   logger.Config `yaml:"logger"`
+		Database db.Config     `yaml:"database"`
+		Cache    cache.Config  `yaml:"cache"`
+	}
+	var cfg Config
+	err := config.BindFromFile(&cfg, "config.yaml", ".")
+	if err != nil {
+		logger.Info(ctx, "BindFromFile",
+			logger.Field{Key: "error", Value: err.Error()},
+		)
+		panic(err)
+	}
+
 	// logger
-	logger.Init(false)
+	logger.Init(&cfg.Logger)
 	defer logger.Sync()
 
 	// db
-	var (
-		ctx    = context.Background()
-		config = db.Config{
-			Driver:                "postgres",
-			Host:                  "localhost",
-			Port:                  5432,
-			DBName:                "go",
-			User:                  "go",
-			Password:              "go",
-			SSLMode:               "disable",
-			MaxOpenConnections:    10,
-			MaxLifeTimeConnection: 30,
-			MaxIdleConnections:    20,
-			MaxIdleTimeConnection: 30,
-		}
-	)
-	conn, err := db.NewDB(&config)
+	conn, err := db.NewDB(&cfg.Database)
 	if err != nil {
 		logger.Error(ctx, "open connection", logger.Field{Key: "error", Value: err.Error()})
 		return
@@ -74,14 +79,8 @@ func main() {
 		logger.Field{Key: "dest", Value: dest},
 	)
 
-	// redis
-	cfg := cache.Config{
-		Scheme:   "tcp",
-		Host:     "localhost",
-		Port:     6379,
-		Database: 1,
-	}
-	redis, errR := cache.NewRedis(&cfg)
+	// cache
+	redis, errR := cache.NewRedis(&cfg.Cache)
 	if errR != nil {
 		logger.Error(ctx, "redis", logger.Field{Key: "error", Value: errR.Error()})
 		return

@@ -12,12 +12,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-var ErrKeyNotFound = errors.New("key not found")
-
 type Redis struct {
 	client *redis.Client
 	mu     *sync.Mutex
 }
+
+var ErrKeyNotFound = errors.New("key not found")
 
 func NewRedis(config *Config) (*Redis, error) {
 	client := redis.NewClient(&redis.Options{

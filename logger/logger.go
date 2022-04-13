@@ -15,19 +15,24 @@ const (
 	CtxCorrelationIDKey = "X-Correlation-ID"
 )
 
-type Field struct {
-	Key   string `json:"key"`
-	Value any    `json:"value"`
-}
+type (
+	Config struct {
+		EnableStackTrace bool `yaml:"enableStackTrace"`
+	}
+	Field struct {
+		Key   string `json:"key"`
+		Value any    `json:"value"`
+	}
+)
 
 var (
 	logger *zap.Logger
 	once   sync.Once
 )
 
-func Init(stackTraceEnabled bool) {
+func Init(config *Config) {
 	var (
-		config = zapcore.EncoderConfig{
+		zapConfig = zapcore.EncoderConfig{
 			TimeKey:        "ts",
 			LevelKey:       "level",
 			NameKey:        "logger",
@@ -41,13 +46,13 @@ func Init(stackTraceEnabled bool) {
 			EncodeDuration: zapcore.StringDurationEncoder,
 			EncodeCaller:   zapcore.ShortCallerEncoder,
 		}
-		encoder = zapcore.NewJSONEncoder(config)
+		encoder = zapcore.NewJSONEncoder(zapConfig)
 		level   = zapcore.InfoLevel
 		core    = zapcore.NewCore(encoder, os.Stdout, level)
 		opts    = []zap.Option{zap.AddCaller(), zap.AddCallerSkip(1)}
 	)
 
-	if stackTraceEnabled {
+	if config.EnableStackTrace {
 		opts = append(opts, zap.AddStacktrace(zap.ErrorLevel))
 	}
 

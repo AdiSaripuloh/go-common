@@ -40,7 +40,6 @@ type (
 	DB struct {
 		conn *sqlx.DB
 	}
-
 	Executor interface {
 		Exec(ctx context.Context, statements ...*Statement) error
 		ExecTx(ctx context.Context, statements ...*Statement) error
