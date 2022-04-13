@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/AdiSaripuloh/go-common/logger"
@@ -20,6 +21,7 @@ type (
 		DBName   string `yaml:"dbName"`
 		User     string `yaml:"user"`
 		Password string `yaml:"password"`
+		SSLMode  string `yaml:"sslMode"`
 
 		MaxOpenConnections    int `yaml:"maxOpenConnections"`
 		MaxLifeTimeConnection int `yaml:"maxLifeTimeConnection"` // Seconds
@@ -33,6 +35,7 @@ type (
 		query       string
 		args        []any
 		enableDebug bool
+		mu          *sync.Mutex
 	}
 	DB struct {
 		conn *sqlx.DB
@@ -46,11 +49,13 @@ type (
 
 // NewStatement creating new pipeline statement.
 func NewStatement(dest any, query string, args ...any) *Statement {
-	return &Statement{dest, query, args, false}
+	return &Statement{dest, query, args, false, &sync.Mutex{}}
 }
 
 func (s *Statement) SetDestination(dest any) *Statement {
+	s.mu.Lock()
 	s.dest = dest
+	s.mu.Unlock()
 	return s
 }
 
@@ -59,7 +64,9 @@ func (s *Statement) GetDestination() any {
 }
 
 func (s *Statement) SetQuery(query string) *Statement {
+	s.mu.Lock()
 	s.query = query
+	s.mu.Unlock()
 	return s
 }
 
@@ -68,7 +75,9 @@ func (s *Statement) GetQuery() string {
 }
 
 func (s *Statement) SetArgs(args []any) *Statement {
+	s.mu.Lock()
 	s.args = args
+	s.mu.Unlock()
 	return s
 }
 
@@ -85,7 +94,9 @@ func (s *Statement) log(ctx context.Context) {
 }
 
 func (s *Statement) Debug() *Statement {
+	s.mu.Lock()
 	s.enableDebug = true
+	s.mu.Unlock()
 	return s
 }
 
@@ -181,10 +192,10 @@ func runTx(ctx context.Context, tx *sqlx.Tx, statements ...*Statement) error {
 }
 
 // NewDB create new DB connection.
-func NewDB(config Config) (*DB, error) {
+func NewDB(config *Config) (*DB, error) {
 	dsn := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		config.Host, config.Port, config.User, config.Password, config.DBName,
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		config.Host, config.Port, config.User, config.Password, config.DBName, config.SSLMode,
 	)
 
 	conn, err := sqlx.Open(config.Driver, dsn)

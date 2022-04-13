@@ -25,13 +25,14 @@ func main() {
 			DBName:                "go",
 			User:                  "go",
 			Password:              "go",
+			SSLMode:               "disable",
 			MaxOpenConnections:    10,
 			MaxLifeTimeConnection: 30,
 			MaxIdleConnections:    20,
 			MaxIdleTimeConnection: 30,
 		}
 	)
-	conn, err := db.NewDB(config)
+	conn, err := db.NewDB(&config)
 	if err != nil {
 		logger.Error(ctx, "open connection", logger.Field{Key: "error", Value: err.Error()})
 		return
