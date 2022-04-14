@@ -18,7 +18,7 @@ type redis struct {
 
 func newRedis(config *Config) (*redis, error) {
 	client := gr.NewClient(&gr.Options{
-		Addr:     fmt.Sprintf("%s://%s:%d", config.Scheme, config.Host, config.Port),
+		Addr:     fmt.Sprintf("%s:%d", config.Host, config.Port),
 		Password: config.Password,
 		DB:       config.Database,
 	})
