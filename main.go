@@ -80,7 +80,7 @@ func main() {
 	)
 
 	// cache
-	redis, errR := cache.NewRedis(&cfg.Cache)
+	cac, errR := cache.NewCache(&cfg.Cache)
 	if errR != nil {
 		logger.Error(ctx, "redis", logger.Field{Key: "error", Value: errR.Error()})
 		return
@@ -90,14 +90,14 @@ func main() {
 		Thing int
 	}
 	var c = Cache{Some: "test", Thing: 1}
-	errS := redis.Set(ctx, "redis:key", c, time.Duration(1)*time.Minute)
+	errS := cac.Set(ctx, "redis:key", c, time.Duration(1)*time.Minute)
 	if errS != nil {
 		logger.Error(ctx, "Set", logger.Field{Key: "error", Value: errS.Error()})
 		return
 	}
 	logger.Info(ctx, "c", logger.Field{Key: "cache", Value: c})
 	var cd Cache
-	errCd := redis.Get(ctx, "redis:key", &cd)
+	errCd := cac.Get(ctx, "redis:key", &cd)
 	if errCd != nil {
 		logger.Error(ctx, "Get", logger.Field{Key: "error", Value: errCd.Error()})
 		return

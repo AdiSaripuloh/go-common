@@ -15,6 +15,7 @@ database:
   maxIdleTimeConnection: 1
 
 cache:
+  driver: "redis"
   scheme: "tcp"
   host: "localhost"
   port: 6379

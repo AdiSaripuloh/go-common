@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
-	"github.com/pkg/errors"
 )
 
 type Redis struct {
@@ -17,9 +16,7 @@ type Redis struct {
 	mu     *sync.Mutex
 }
 
-var ErrKeyNotFound = errors.New("key not found")
-
-func NewRedis(config *Config) (*Redis, error) {
+func newRedis(config *Config) (*Redis, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s://%s:%d", config.Scheme, config.Host, config.Port),
 		Password: config.Password,
@@ -34,7 +31,7 @@ func NewRedis(config *Config) (*Redis, error) {
 }
 
 // Set store with TTL
-func (r *Redis) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
+func (r *Redis) set(ctx context.Context, key string, value any, ttl time.Duration) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -49,7 +46,7 @@ func (r *Redis) Set(ctx context.Context, key string, value any, ttl time.Duratio
 }
 
 // Get by key
-func (r *Redis) Get(ctx context.Context, key string, dest any) error {
+func (r *Redis) get(ctx context.Context, key string, dest any) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -66,8 +63,8 @@ func (r *Redis) Get(ctx context.Context, key string, dest any) error {
 	return nil
 }
 
-// Del by key
-func (r *Redis) Del(ctx context.Context, key []string) error {
+// del by key
+func (r *Redis) del(ctx context.Context, key ...string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -77,7 +74,7 @@ func (r *Redis) Del(ctx context.Context, key []string) error {
 }
 
 // Close client
-func (r *Redis) Close(ctx context.Context, key []string) error {
+func (r *Redis) close(ctx context.Context) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
