@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -16,6 +17,7 @@ type (
 		Username string `yaml:"username"`
 		Password string `yaml:"password"`
 		Database int    `yaml:"database"`
+		Prefix   string `yaml:"prefix"`
 	}
 
 	cacher interface {
@@ -27,6 +29,7 @@ type (
 
 	Cache struct {
 		cacher cacher
+		prefix string
 	}
 )
 
@@ -48,21 +51,38 @@ func NewCache(config *Config) (*Cache, error) {
 		break
 	}
 
-	return &Cache{cacher: c}, nil
+	return &Cache{cacher: c, prefix: config.Prefix}, nil
 }
 
 func (c *Cache) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
-	return c.cacher.set(ctx, key, value, ttl)
+	return c.cacher.set(ctx, setPrefix(c.prefix, key), value, ttl)
 }
 
 func (c *Cache) Get(ctx context.Context, key string, dest any) error {
-	return c.cacher.get(ctx, key, dest)
+	return c.cacher.get(ctx, setPrefix(c.prefix, key), dest)
 }
 
 func (c *Cache) Del(ctx context.Context, keys ...string) error {
-	return c.cacher.del(ctx, keys...)
+	return c.cacher.del(ctx, setPrefixes(c.prefix, keys...)...)
 }
 
 func (c *Cache) Close(ctx context.Context) error {
 	return c.cacher.close(ctx)
+}
+
+func setPrefix(prefix, key string) string {
+	if prefix == "" {
+		return key
+	}
+
+	return fmt.Sprintf("%s:%s", prefix, key)
+}
+
+func setPrefixes(prefix string, keys ...string) []string {
+	var keysWithPrefix []string
+	for _, key := range keys {
+		keysWithPrefix = append(keysWithPrefix, setPrefix(prefix, key))
+	}
+
+	return keysWithPrefix
 }
